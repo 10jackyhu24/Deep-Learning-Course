@@ -33,13 +33,15 @@ def writeJson(mod: int, fib: list):
         json.dump(data, f, indent=4)
 
 def draw_and_save(fib: list):
-    plt.plot(fib, label='pisano periods')
+    plt.plot(fib, label='pisano periods') # draw
     plt.title('Fib mod 5')
     plt.legend(loc='lower right')
+    # check dir is exist
     output_dir = 'output'
     os.makedirs(output_dir, exist_ok=True)
+    # save chart
     plt.savefig(os.path.join(output_dir, 'lab1.1.png'))
-    plt.show()
+    plt.show() #open the chart
     plt.close()
 
 if __name__ == '__main__':
