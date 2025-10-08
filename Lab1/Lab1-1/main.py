@@ -23,16 +23,16 @@ def writeJson(mod: int, fib: list):
 
     # json
     data = {
-        "mod": mod,
-        "pisano_period": fib
+        'mod': mod,
+        'pisano_period': fib
     }
 
-    # white file to dir/lab1.1_output.json
+    # write file to dir/lab1.1_output.json
     json_path = os.path.join(output_dir, 'lab1.1_output.json')
     with open(json_path, 'w') as f:
         json.dump(data, f, indent=4)
 
-def draw_and_save(fib: list):
+def drawAndSave(fib: list):
     plt.plot(fib, label='pisano periods') # draw
     plt.title('Fib mod 5')
     plt.legend(loc='lower right')
@@ -50,4 +50,4 @@ if __name__ == '__main__':
     print(fib)
     fib = [int(x) for x in fib]
     writeJson(mod, fib)
-    draw_and_save(fib)
+    drawAndSave(fib)
