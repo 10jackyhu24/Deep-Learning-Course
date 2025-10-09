@@ -51,7 +51,7 @@ def writeJson(w, b, lossHistory, num_epochs, lr):
         'final_bias': round(float(b), 2),
         'loss_history': [round(float(x), 2) for x in lossHistory],
         'num_epochs': int(num_epochs),
-        'learning_rate': round(float(lr), 2)
+        'learning_rate': float(lr)
     }
 
     # write file
