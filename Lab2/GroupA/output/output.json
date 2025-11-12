@@ -1,0 +1,9 @@
+{
+    "Learning rate": 0.01,
+    "Epochs": 300,
+    "Batch size": 40,
+    "Final train accuracy": 0.9882499999999986,
+    "Final val accuracy": 0.9825,
+    "Final train loss": 0.039522699231287234,
+    "Final val loss": 0.05446678741461824
+}

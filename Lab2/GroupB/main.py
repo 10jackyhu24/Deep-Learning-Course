@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import json
 
-TRAIN_FILE_PATH = './Group_A_train.csv'
-TEST_FILE_PATH = './Group_A_test.csv'
+TRAIN_FILE_PATH = './Group_B_train.csv'
+TEST_FILE_PATH = './Group_B_test.csv'
 OUTPUT_DIR = './output/'
 NUM_CLASSES = 10
 NUM_EPOCHS = 300
@@ -143,7 +143,7 @@ def plot_draw(train_loss_history, val_loss_history, train_acc_history, val_acc_h
 
     plt.plot(epochs, train_loss_history, label='Train loss', color='blue')
     plt.plot(epochs, val_loss_history, label='Validation loss', color='orange')
-    plt.title('GroupA_Loss')
+    plt.title('GroupB_Loss')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.legend()
@@ -152,7 +152,7 @@ def plot_draw(train_loss_history, val_loss_history, train_acc_history, val_acc_h
 
     plt.plot(epochs, train_acc_history, label='Train Accuracy', color='blue')
     plt.plot(epochs, val_acc_history, label='Validation Accuracy', color='orange')
-    plt.title('GroupA_Accuracy')
+    plt.title('GroupB_Accuracy')
     plt.xlabel('Epochs')
     plt.ylabel('Accuracy')
     plt.legend()
