@@ -5,13 +5,13 @@ import json
 TRAIN_FILE_PATH = './Group_A_train.csv'
 TEST_FILE_PATH = './Group_A_test.csv'
 OUTPUT_DIR = './output/'
-NUM_CLASSES = 10
+CLASSES = [0, 1, 8, 9]
 NUM_EPOCHS = 300
 BATCH_SIZE = 40
 
 class SoftmaxRegression:
     def __init__(self, input_size, num_classes, learning_rate=0.01):
-        self.W = np.random.randn(input_size, num_classes) * 0.01
+        self.W = np.zeros((input_size, num_classes))
         self.b = np.zeros((1, num_classes))
         self.learning_rate = learning_rate
         self.train_loss_history = []
@@ -119,7 +119,7 @@ def load_and_process_data(train_file, test_file):
 def label_to_one_hot(labels, num_classes):
     one_hot = np.zeros((labels.shape[0], num_classes))
     for idx, label in enumerate(labels):
-        one_hot[idx, label] = 1
+        one_hot[idx, CLASSES.index(label)] = 1
     return one_hot
 
 def split_data(x, y, train_ratio=0.8):
@@ -181,12 +181,12 @@ def save_final_results(results, predictions, filename='output.json'):
 if __name__ == '__main__':
     np.random.seed(123)
     x_train, y_train, x_test = load_and_process_data(TRAIN_FILE_PATH, TEST_FILE_PATH)
-    y_train_one_hot = label_to_one_hot(y_train, NUM_CLASSES)
+    y_train_one_hot = label_to_one_hot(y_train, len(CLASSES))
     x_train_split, y_train_split, x_val_split, y_val_split = split_data(x_train, y_train_one_hot, train_ratio=0.8)
 
     input_size = x_train.shape[1]
 
-    model = SoftmaxRegression(input_size, NUM_CLASSES, 0.01)
+    model = SoftmaxRegression(input_size, len(CLASSES), 0.01)
     model.train(x_train_split, y_train_split, x_val_split, y_val_split, NUM_EPOCHS, BATCH_SIZE)
 
     plot_draw(model.train_loss_history, model.val_loss_history, model.train_acc_history, model.val_acc_history)
@@ -197,6 +197,7 @@ if __name__ == '__main__':
     final_val_acc = model.val_acc_history[-1]
 
     predictions = model.predict(x_test).tolist()
+    predictions = [CLASSES[p] for p in predictions]  # 映射回原始標籤
 
     save_final_results({
         'learning_rate': model.learning_rate,
@@ -207,7 +208,3 @@ if __name__ == '__main__':
         'final_train_loss': final_train_loss,
         'final_val_loss': final_val_loss,
     }, predictions)
-
-
-
-
