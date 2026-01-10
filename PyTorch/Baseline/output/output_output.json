@@ -2,8 +2,8 @@
     "Learning rate": 0.001,
     "Epoch": 100,
     "Batch size": 64,
-    "Final train accuracy": 0.917375,
-    "Validation accuracy": 0.7965,
-    "Final train loss": 0.22340027129650117,
-    "Final validation loss": 0.6750488039106131
+    "Final train accuracy": 1.0,
+    "Validation accuracy": 0.7225,
+    "Final train loss": 0.00045488182408735155,
+    "Final validation loss": 2.300192140042782
 }

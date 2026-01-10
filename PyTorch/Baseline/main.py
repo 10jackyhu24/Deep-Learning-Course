@@ -112,18 +112,18 @@ if __name__ == "__main__":
     train_transforms = transforms.Compose([
         transforms.ToTensor(),
 
-        transforms.RandomHorizontalFlip(p=0.5), # 隨機水平翻轉 (50%機率)
-        transforms.RandomApply([
-            transforms.RandomRotation(15),  # 隨機旋轉 (-15度到15度)
-            transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),  # 隨機平移 (10%)
-        ], p=0.5),  # 50%機率套用以上兩種變換
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # (mean, std) 正規化
+        # transforms.RandomHorizontalFlip(p=0.5), # 隨機水平翻轉 (50%機率)
+        # transforms.RandomApply([
+        #     transforms.RandomRotation(15),  # 隨機旋轉 (-15度到15度)
+        #     transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),  # 隨機平移 (10%)
+        # ], p=0.5),  # 50%機率套用以上兩種變換
+        # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # (mean, std) 正規化
     ])
 
     valid_transforms = transforms.Compose([
         transforms.ToTensor(),
 
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # (mean, std) 正規化
+        # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # (mean, std) 正規化
     ])
 
     train_dataset = MyDataset(full_data_X[train_indices], full_data_Y[train_indices], train_transforms)

@@ -9,7 +9,7 @@ from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
 
 LEARNING_RATE = 0.001
-EPOCH = 150
+EPOCH = 100
 BATCH_SIZE = 64
 
 class MyDataset(Dataset):
@@ -58,63 +58,42 @@ class CNN(nn.Module):
     def __init__(self):
         super().__init__()
         # input (3, 32, 32)
+        # Add Residual Block
+        self.res_block = ResidualBlock(3, 16, stride=1) # (16, 32, 32)
+
+        self.conv1 = nn.Conv2d(16, 16, kernel_size=3) # (16, 30, 30)
+        self.pool1 = nn.MaxPool2d(2, 2) # (16, 15, 15)
         
-        # Initial convolution
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1) # (32, 32, 32)
-        self.bn1 = nn.BatchNorm2d(32)
-        
-        # First Residual Block
-        self.res_block1 = ResidualBlock(32, 32, stride=1) # (32, 32, 32)
-        self.res_block2 = ResidualBlock(32, 64, stride=2) # (64, 16, 16)
-        
-        # Second Residual Block
-        self.res_block3 = ResidualBlock(64, 64, stride=1) # (64, 16, 16)
-        self.res_block4 = ResidualBlock(64, 128, stride=2) # (128, 8, 8)
-        
-        # Third Residual Block
-        self.res_block5 = ResidualBlock(128, 128, stride=1) # (128, 8, 8)
-        
-        # Global Average Pooling
-        self.global_avg_pool = nn.AdaptiveAvgPool2d((1, 1)) # (128, 1, 1)
-        
-        # Fully connected layers with dropout
-        self.dropout1 = nn.Dropout(0.5)
-        self.linear1 = nn.Linear(128, 256)
-        self.bn_fc = nn.BatchNorm1d(256)
-        self.dropout2 = nn.Dropout(0.5)
-        self.linear2 = nn.Linear(256, 10)
+        self.conv2 = nn.Conv2d(16, 32, kernel_size=3) # (32, 13, 13)
+        self.pool2 = nn.MaxPool2d(2, 2) # (32, 6, 6)
+
+        self.linear1 = nn.Linear(32 * 6 * 6, 128) # 128
+        self.linear2 = nn.Linear(128, 10) # 10
 
     def forward(self, x):
-        # Initial convolution
-        out = F.relu(self.bn1(self.conv1(x)))
-        
-        # Residual blocks
-        out = self.res_block1(out)
-        out = self.res_block2(out)
-        out = self.res_block3(out)
-        out = self.res_block4(out)
-        out = self.res_block5(out)
-        
-        # Global average pooling
-        out = self.global_avg_pool(out)
-        out = out.view(out.size(0), -1)
-        
-        # Fully connected layers
-        out = self.dropout1(out)
-        out = F.relu(self.bn_fc(self.linear1(out)))
-        out = self.dropout2(out)
+        out = self.res_block(x)
+
+        out = F.relu(self.conv1(out))
+        out = self.pool1(out)
+        out = F.relu(self.conv2(out))
+        out = self.pool2(out)
+        out = out.view(-1, 32 * 6 * 6)
+        out = F.relu(self.linear1(out))
         out = self.linear2(out)
-        
         return out
 
 
-def load_data(path:str):
-    with open(path, 'r') as file:
+def load_data(train_path:str, test_path:str):
+    with open(train_path, 'r') as file:
         json_data = json.load(file)
         data_X = np.array([sample['Image'] for sample in json_data], dtype=np.uint8)
         data_Y = np.array([sample['Label'] for sample in json_data], dtype=np.int64)
 
-    return data_X, data_Y
+    with open(test_path, 'r') as file:
+        json_data = json.load(file)
+        test_X = np.array([sample['Image'] for sample in json_data], dtype=np.uint8)
+
+    return data_X, data_Y, test_X
 
 def plot_history(train_loss, train_acc, valid_loss, valid_acc):
     epochs = range(1, len(train_loss) + 1)
@@ -137,7 +116,7 @@ def plot_history(train_loss, train_acc, valid_loss, valid_acc):
     plt.savefig('Model B/output/output_accuracy.png')
     plt.close()
 
-def save_final_results(results, output_path='./Model B/output/'):
+def save_final_results(results, predictions, output_path='./Model B/output/'):
     output_data = {
         "Learning rate": results['learning_rate'],  
         "Epoch": results['epochs'],
@@ -150,12 +129,18 @@ def save_final_results(results, output_path='./Model B/output/'):
     with open(output_path + 'output_output.json', 'w') as f:  # 將訓練參數與結果寫入 JSON
         json.dump(output_data, f, indent=4)
 
+    prediction_data = {
+        "Predictions": predictions  # 預測結果
+    }
+    with open(output_path + 'test_set_prediction.json', 'w') as f:  # 儲存測試集預測
+        json.dump(prediction_data, f, indent=4)
+
 if __name__ == "__main__":
     seed = 42
     np.random.seed(seed)
     torch.manual_seed(seed)
 
-    full_data_X, full_data_Y = load_data('./train.json')
+    full_data_X, full_data_Y, test_X = load_data('./train.json', './test.json')
 
     # 切資料集
     total_size = full_data_X.shape[0]
@@ -169,20 +154,18 @@ if __name__ == "__main__":
     # 定義資料增強與資料集
     train_transforms = transforms.Compose([
         transforms.ToTensor(),
+
         transforms.RandomHorizontalFlip(p=0.5), # 隨機水平翻轉 (50%機率)
         transforms.RandomApply([
             transforms.RandomRotation(15),  # 隨機旋轉 (-15度到15度)
             transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),  # 隨機平移 (10%)
         ], p=0.5),  # 50%機率套用以上兩種變換
-        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),  # 顏色抖動
-        transforms.RandomApply([
-            transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0))  # 高斯模糊
-        ], p=0.3),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # (mean, std) 正規化
     ])
 
     valid_transforms = transforms.Compose([
         transforms.ToTensor(),
+
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # (mean, std) 正規化
     ])
 
@@ -193,10 +176,7 @@ if __name__ == "__main__":
     valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
     model = CNN().to('cuda:0')
-    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-4)
-    
-    # Learning rate scheduler - 每30個epoch減少學習率
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.5)
+    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
     train_loss_history = []
     train_acc_history = []
@@ -245,9 +225,6 @@ if __name__ == "__main__":
         train_loss_history.append(train_loss / len(train_loader))
         valid_acc_history.append(valid_correct / len(valid_dataset))
         valid_loss_history.append(valid_loss / len(valid_loader))
-        
-        # 更新學習率
-        scheduler.step()
 
         print("=======================================")
         print(f"Epoch {epoch+1}/{EPOCH}")
@@ -255,10 +232,19 @@ if __name__ == "__main__":
         print(f"Train loss: {train_loss_history[-1]:.4f})")
         print(f"Valid acc: {valid_acc_history[-1]:.4f})")
         print(f"Valid loss: {valid_loss_history[-1]:.4f})")
-        print(f"Learning rate: {scheduler.get_last_lr()[0]:.6f}")
         print("=======================================")
 
         plot_history(train_loss_history, train_acc_history, valid_loss_history, valid_acc_history)
+    
+    # 對測試集進行預測
+    model.eval()
+    predictions = []
+    with torch.no_grad():
+        for i in range(len(test_X)):
+            test_img = valid_transforms(test_X[i]).unsqueeze(0).to('cuda:0')  # 添加 batch 維度
+            logits = model(test_img)
+            pred = torch.argmax(logits, dim=-1).item()
+            predictions.append(pred)
     
     results = {
         'learning_rate': LEARNING_RATE,
@@ -269,4 +255,4 @@ if __name__ == "__main__":
         'final_train_loss': train_loss_history[-1],
         'final_val_loss': valid_loss_history[-1],
     }
-    save_final_results(results)
+    save_final_results(results, predictions)
