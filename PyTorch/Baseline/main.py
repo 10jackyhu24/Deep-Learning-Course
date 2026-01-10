@@ -8,6 +8,10 @@ from torch.nn import functional as F
 from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
 
+LEARNING_RATE = 0.001
+EPOCH = 100
+BATCH_SIZE = 64
+
 class MyDataset(Dataset):
     def __init__(self, data_X: np, data_Y: np, transform):
         self.data = data_X
@@ -75,6 +79,19 @@ def plot_history(train_loss, train_acc, valid_loss, valid_acc):
     plt.savefig('Baseline/output/output_accuracy.png')
     plt.close()
 
+def save_final_results(results, output_path='./Baseline/output/'):
+    output_data = {
+        "Learning rate": results['learning_rate'],  
+        "Epoch": results['epochs'],
+        "Batch size": results['batch_size'],
+        "Final train accuracy": results['final_train_accuracy'],
+        "Validation accuracy": results['final_val_accuracy'],
+        "Final train loss": results['final_train_loss'],
+        "Final validation loss": results['final_val_loss'],
+    }
+    with open(output_path + 'output_output.json', 'w') as f:  # 將訓練參數與結果寫入 JSON
+        json.dump(output_data, f, indent=4)
+
 if __name__ == "__main__":
     seed = 42
     np.random.seed(seed)
@@ -112,19 +129,18 @@ if __name__ == "__main__":
     train_dataset = MyDataset(full_data_X[train_indices], full_data_Y[train_indices], train_transforms)
     valid_dataset = MyDataset(full_data_X[valid_indices], full_data_Y[valid_indices], valid_transforms)
 
-    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-    valid_loader = DataLoader(valid_dataset, batch_size=64, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+    valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
     model = CNN().to('cuda:0')
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
-    max_epochs = 100
     train_loss_history = []
     train_acc_history = []
     valid_loss_history = []
     valid_acc_history = []
 
-    for epoch in range(max_epochs):
+    for epoch in range(EPOCH):
         model.train()
         train_loss = 0.0
         train_correct = 0
@@ -168,7 +184,7 @@ if __name__ == "__main__":
         valid_loss_history.append(valid_loss / len(valid_loader))
 
         print("=======================================")
-        print(f"Epoch {epoch+1}/{max_epochs}")
+        print(f"Epoch {epoch+1}/{EPOCH}")
         print(f"Train acc: {train_acc_history[-1]:.4f})")
         print(f"Train loss: {train_loss_history[-1]:.4f})")
         print(f"Valid acc: {valid_acc_history[-1]:.4f})")
@@ -176,3 +192,14 @@ if __name__ == "__main__":
         print("=======================================")
 
         plot_history(train_loss_history, train_acc_history, valid_loss_history, valid_acc_history)
+    
+    results = {
+        'learning_rate': LEARNING_RATE,
+        'epochs': EPOCH,
+        'batch_size': BATCH_SIZE,
+        'final_train_accuracy': train_acc_history[-1],
+        'final_val_accuracy': valid_acc_history[-1],
+        'final_train_loss': train_loss_history[-1],
+        'final_val_loss': valid_loss_history[-1],
+    }
+    save_final_results(results)
